@@ -1059,19 +1059,22 @@ function Altoholic:BuildRecipesSubMenu()
 					end
 				} )
 				for TradeSkillName, _ in pairs(c.recipes) do
-                    local skillsID = Altoholic:GetProfessionID(TradeSkillName) + (n * 10000) + (i * 100)
-                    table.insert(self.Menu[MENU_RECIPES].subMenu[n].subMenu[i].subMenu, {
-                        name = TradeSkillName,
-                        id = Altoholic:GetProfessionID(TradeSkillName) + (n * 10000) + (i * 100),
-                        OnClick = function(self)
-                            local id = skillsID
-                            local skillID = mod(id, 100)
-                            id = floor(id / 100)
-                            Altoholic:SelectAlt(altID)
-                            Altoholic:SelectProfession(skillID)
-                            Altoholic:ActivateMenuItem("AltoRecipes")
-                        end
-                    } )
+					local skillName = Altoholic:GetProfessionID(TradeSkillName)
+					if skillName then
+						local skillsID = skillName + (n * 10000) + (i * 100)
+						table.insert(self.Menu[MENU_RECIPES].subMenu[n].subMenu[i].subMenu, {
+							name = TradeSkillName,
+							id = skillName + (n * 10000) + (i * 100),
+							OnClick = function(self)
+								local id = skillsID
+								local skillID = mod(id, 100)
+								id = floor(id / 100)
+								Altoholic:SelectAlt(altID)
+								Altoholic:SelectProfession(skillID)
+								Altoholic:ActivateMenuItem("AltoRecipes")
+							end
+						} )
+					end
 				end
 				i = i + 1
 			end
@@ -1205,6 +1208,7 @@ function Altoholic:GetProfessionID(skill)
 			return i
 		end
 	end
+	return nil
 end
 
 function Altoholic:SelectProfession(id)
