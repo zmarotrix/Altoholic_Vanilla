@@ -270,7 +270,7 @@ function Altoholic:UpdateTradeSkill(tradeskillName)
 end
 
 function Altoholic:UpdateCraft(tradeskillName)
-	if tradeskillName == L["Beast Training"] then return end
+	if Altoholic:GetProfessionID(tradeskillName) == 0 then return end -- unsupported/custom skill
 	local c = self.db.account.data[V.faction][V.realm].char[V.player]
 	local r = c.recipes[tradeskillName].list
     if c.recipes[0] then

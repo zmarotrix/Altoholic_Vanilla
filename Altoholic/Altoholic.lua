@@ -1066,6 +1066,7 @@ function Altoholic:BuildRecipesSubMenu()
 							name = TradeSkillName,
 							id = skillName + (n * 10000) + (i * 100),
 							OnClick = function(self)
+								if skillName == 14 or skillName == 15 then return end -- disable disguise/survial
 								local id = skillsID
 								local skillID = mod(id, 100)
 								id = floor(id / 100)
@@ -1201,7 +1202,9 @@ function Altoholic:GetProfessionID(skill)
     [10] = BI["Fishing"],
     [11] = L["Riding"],
     [12] = L["Poisons"],
-    [13] = L["Lockpicking"]
+    [13] = L["Lockpicking"],
+	[14] = "Disguise",
+	[15] = "Survival"
     }
 	for i,v in (Profs) do
 		if skill == v then
@@ -1225,7 +1228,9 @@ function Altoholic:SelectProfession(id)
     [10] = BI["Fishing"],
     [11] = L["Riding"],
     [12] = L["Poisons"],
-    [13] = L["Lockpicking"]
+    [13] = L["Lockpicking"],
+	[14] = "Disguise",
+	[15] = "Survival"
     }
     for i,v in (Profs) do
         if id == i then
@@ -1429,88 +1434,94 @@ function Altoholic:GetItemCount(searchedID)
 		V.ItemCount = {}
 	end
 	local count = 0
-	for CharacterName, c in pairs(self.db.account.data[V.faction][V.realm].char) do
-		local bagCount = 0
-		local bankCount = 0
-		for BagName, b in pairs(c.bag) do
-			for slotID=1, b.size do
-				local id = b.ids[slotID]
-				if (id) and (id == searchedID) then
-					local itemCount
-					if (b.counts[slotID] == nil) or (b.counts[slotID] == 0) then
-						itemCount = 1
-					else
-						itemCount = b.counts[slotID]
-					end
-					if (BagName == "Bag100") then
-						bankCount = bankCount + itemCount
-					elseif (BagName == "Bag-2") then
-						bagCount = bagCount + itemCount
-					else
-						local bagNum = tonumber(string.sub(BagName, 4))
-						if (bagNum >= 0) and (bagNum <= 4) then
-							bagCount = bagCount + itemCount
-						else
-							bankCount = bankCount + itemCount
+	for faction,_ in pairs(self.db.account.data) do
+		for realm in pairs(self.db.account.data[faction]) do
+			if V.realm == realm then
+				for CharacterName, c in pairs(self.db.account.data[faction][realm].char) do
+					local bagCount = 0
+					local bankCount = 0
+					for BagName, b in pairs(c.bag) do
+						for slotID=1, b.size do
+							local id = b.ids[slotID]
+							if (id) and (id == searchedID) then
+								local itemCount
+								if (b.counts[slotID] == nil) or (b.counts[slotID] == 0) then
+									itemCount = 1
+								else
+									itemCount = b.counts[slotID]
+								end
+								if (BagName == "Bag100") then
+									bankCount = bankCount + itemCount
+								elseif (BagName == "Bag-2") then
+									bagCount = bagCount + itemCount
+								else
+									local bagNum = tonumber(string.sub(BagName, 4))
+									if (bagNum >= 0) and (bagNum <= 4) then
+										bagCount = bagCount + itemCount
+									else
+										bankCount = bankCount + itemCount
+									end
+								end
+							end
 						end
 					end
-				end
-			end
-		end
-		local equipCount = 0
-		for slotID=1, 19 do
-			local s = c.inventory[slotID]
-			if (s ~= nil) then
-				if type(s) == "number" then
-					if (s == searchedID) then
-						equipCount = equipCount + 1
+					local equipCount = 0
+					for slotID=1, 19 do
+						local s = c.inventory[slotID]
+						if (s ~= nil) then
+							if type(s) == "number" then
+								if (s == searchedID) then
+									equipCount = equipCount + 1
+								end
+							elseif self:GetIDFromLink(s) == searchedID then
+								equipCount = equipCount + 1
+							end
+						end
 					end
-				elseif self:GetIDFromLink(s) == searchedID then
-					equipCount = equipCount + 1
+					local mailCount = 0
+					for slotID=1, table.getn(c.mail) do
+						local s = c.mail[slotID]
+						if (s.link ~= nil) and (self:GetIDFromLink(s.link) == searchedID) then
+							if (s.count == nil) or (s.count == 0) then
+								mailCount = mailCount + 1
+							else
+								mailCount = mailCount + s.count
+							end
+						end
+					end
+					local charCount = bagCount + bankCount + equipCount + mailCount
+					count = count + charCount
+					if charCount > 0 then
+						local charInfo = ORANGE .. charCount .. WHITE .. " ("
+						if bagCount > 0 then
+							charInfo = charInfo .. WHITE .. L["Bags"] .. ": "  .. TEAL .. bagCount
+							charCount = charCount - bagCount
+							if charCount > 0 then
+								charInfo = charInfo .. WHITE .. L[", "]
+							end
+						end
+						if bankCount > 0 then
+							charInfo = charInfo .. WHITE .. L["Bank"] .. ": " .. TEAL .. bankCount
+							charCount = charCount - bankCount
+							if charCount > 0 then
+								charInfo = charInfo .. WHITE .. L[", "]
+							end
+						end
+						if equipCount > 0 then
+							charInfo = charInfo .. WHITE .. L["Equipped"] .. ": "  .. TEAL .. equipCount
+							charCount = charCount - equipCount
+							if charCount > 0 then
+								charInfo = charInfo .. WHITE .. L[", "]
+							end
+						end
+						if mailCount > 0 then
+							charInfo = charInfo .. WHITE .. L["Mail"] .. ": "  .. TEAL .. mailCount
+						end
+						charInfo = charInfo .. WHITE .. ")"
+						V.ItemCount[Altoholic:GetClassColor(c.class) .. CharacterName] = charInfo
+					end
 				end
 			end
-		end
-		local mailCount = 0
-		for slotID=1, table.getn(c.mail) do
-			local s = c.mail[slotID]
-			if (s.link ~= nil) and (self:GetIDFromLink(s.link) == searchedID) then
-				if (s.count == nil) or (s.count == 0) then
-					mailCount = mailCount + 1
-				else
-					mailCount = mailCount + s.count
-				end
-			end
-		end
-		local charCount = bagCount + bankCount + equipCount + mailCount
-		count = count + charCount
-		if charCount > 0 then
-			local charInfo = ORANGE .. charCount .. WHITE .. " ("
-			if bagCount > 0 then
-				charInfo = charInfo .. WHITE .. L["Bags"] .. ": "  .. TEAL .. bagCount
-				charCount = charCount - bagCount
-				if charCount > 0 then
-					charInfo = charInfo .. WHITE .. L[", "]
-				end
-			end
-			if bankCount > 0 then
-				charInfo = charInfo .. WHITE .. L["Bank"] .. ": " .. TEAL .. bankCount
-				charCount = charCount - bankCount
-				if charCount > 0 then
-					charInfo = charInfo .. WHITE .. L[", "]
-				end
-			end
-			if equipCount > 0 then
-				charInfo = charInfo .. WHITE .. L["Equipped"] .. ": "  .. TEAL .. equipCount
-				charCount = charCount - equipCount
-				if charCount > 0 then
-					charInfo = charInfo .. WHITE .. L[", "]
-				end
-			end
-			if mailCount > 0 then
-				charInfo = charInfo .. WHITE .. L["Mail"] .. ": "  .. TEAL .. mailCount
-			end
-			charInfo = charInfo .. WHITE .. ")"
-			V.ItemCount[Altoholic:GetClassColor(c.class) .. CharacterName] = charInfo
 		end
 	end
 	return count
@@ -1644,6 +1655,7 @@ function Altoholic:HookTooltip()
     end)
     self:SecureHook(GameTooltip, "Show", function(tooltip)
         local itemID = Altoholic:IsGatheringNode(getglobal("GameTooltipTextLeft1"):GetText() )
+		itemID = nil
         if itemID then
             if AltoOptions_TooltipCount:GetChecked() or AltoOptions_TooltipTotal:GetChecked() then
                 V.ToolTipCachedCount = Altoholic:GetItemCount(itemID)
@@ -1788,7 +1800,7 @@ function Altoholic:WhoKnowsRecipe(tooltip, ttype)
                             end
                         end
                     end
-                    local ttlines = nil
+					local ttlines = ""
                     if isKnownByChar then
                         if AltoOptions_TooltipAlreadyKnown:GetChecked() then 
                             ttlines = TEAL .. L["Already known by "] .. WHITE .. CharacterName .. "\n"
