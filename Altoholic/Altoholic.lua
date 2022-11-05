@@ -1834,7 +1834,7 @@ function Altoholic:WhoKnowsRecipe(tooltip, ttype)
                 end                
             end
         end
-        if recipeTT then
+        if recipeTT ~= nil and recipeTT ~= "" then
             self:AddLine(" ",1,1,1)
             self:AddLine(recipeTT,1,1,1)
         end
